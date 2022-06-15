@@ -51,14 +51,14 @@ class RightmoveScraper:
     def run(self):
         for page in range(0, 5):
             index = page * 24
-            
+
             minBedrooms = int(input('Minimum Bedrooms : '))
             maxBedrooms = int(input("Maximum Bedrooms : "))
             maxPrice = int(input("Maximuim Price : "))
             location = str(input("Location? [Basingstoke = B / Winchester = W) ")).lower()
             radius_reqr = [0 - 5 - 10 - 15 - 20 - 30 - 40]
             radius = int(input("Radius (Options : [0 - 5 - 10 - 15 - 20 - 30 - 40]) : "))
-            
+
             # Places
             Basingstoke = "5E115"
             Winchester = "5E1460"
@@ -66,7 +66,7 @@ class RightmoveScraper:
                 location = Basingstoke
             elif location == "w":
                 location = Winchester
-                
+
             url = f"https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=REGION%{location}&" \
             f"&index=&" + str(index) + \
             f"&maxBedrooms={maxBedrooms}&" \
@@ -74,8 +74,8 @@ class RightmoveScraper:
             f"maxPrice={maxPrice}&" \
             f"radius={radius}&" \
             f"propertyTypes=detached%2Csemi-detached%2Cterraced&primaryDisplayPropertyType=houses" \
-            "&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords="  '&propertyTypes=&mustHave=&dontShow=&furnishTypes=&keywords='
-
+            "&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords="
+            print(url)
 
             response = self.fetch(url)
             self.parse(response.text)
