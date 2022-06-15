@@ -1,64 +1,88 @@
-from bs4 import BeautifulSoup
 import requests
-import time
-
-tempurl = "https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=REGION%5E1460&" \
-      f"&index=24&" \
-      "maxBedrooms=3&" \
-      "minBedrooms=2&" \
-      "maxPrice=325000&" \
-      "radius=10.0&" \
-      "propertyTypes=detached%2Csemi-detached%2Cterraced&primaryDisplayPropertyType=houses" \
-      "&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords="
+from bs4 import BeautifulSoup
+import csv
 
 
-default_input = input("Default? y/n : ")
-global pagereq
-if default_input == "y":
-      default = "https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=REGION%5E1460&&index=24&maxBedrooms=3&minBedrooms=2&maxPrice=450000&radius=5&propertyTypes=detached%2Csemi-detached%2Cterraced&primaryDisplayPropertyType=houses&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords="
-      print("LinkLog : " + default)
-      time.sleep(1)
-      pagereq = requests.get(default)
-      print(pagereq)
+class RightmoveScraper:
+    results = []
 
-elif default_input == "n":
-      minBedrooms = int(input('Minimum Bedrooms : '))
-      maxBedrooms = int(input("Maximum Bedrooms : "))
-      maxPrice = int(input("Maximuim Price : "))
+    def fetch(self, url):
+        print('HTTP GET request to URL: %s' % url, end='')
+        response = requests.get(url)
+        print(' | Status code: %s' % response.status_code)
 
-      radius_reqr = [0 - 5 - 10 - 15 - 20 - 30 - 40]
+        return response
 
-      radius = int(input("Radius (Options : [0 - 5 - 10 - 15 - 20 - 30 - 40]) : "))
+    def parse(self, html):
+        content = BeautifulSoup(html, 'lxml')
 
-      url = "https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=REGION%5E1460&" \
-            f"&index=24&" \
-            f"maxBedrooms={maxBedrooms}&" \
+        titles = [title.text.strip() for title in content.findAll('h2', {'class': 'propertyCard-title'})]
+        addresses = [address['content'] for address in content.findAll('meta', {'itemprop': 'streetAddress'})]
+        descriptions = [description.text for description in
+                        content.findAll('span', {'data-test': 'property-description'})]
+        prices = [price.text.strip() for price in content.findAll('div', {'class': 'propertyCard-priceValue'})]
+        dates = [date.text.split(' ')[-1] for date in
+                 content.findAll('span', {'class': 'propertyCard-branchSummary-addedOrReduced'})]
+        sellers = [seller.text.split('by')[-1].strip() for seller in
+                   content.findAll('span', {'class': 'propertyCard-branchSummary-branchName'})]
+        images = [image['src'] for image in content.findAll('img', {'itemprop': 'image'})]
+
+        for index in range(0, len(titles)):
+            self.results.append({
+                'title': titles[index],
+                'address': addresses[index],
+                'description': descriptions[index],
+                'price': prices[index],
+                'date': dates[index],
+                'seller': sellers[index],
+                'image': images[index],
+            })
+
+    def to_csv(self):
+        with open('rightmove.csv', 'w') as csv_file:
+            writer = csv.DictWriter(csv_file, fieldnames=self.results[0].keys())
+            writer.writeheader()
+
+            for row in self.results:
+                writer.writerow(row)
+
+            print('Stored results to "rightmove.csv"')
+
+    def run(self):
+        for page in range(0, 5):
+            index = page * 24
+            
+            minBedrooms = int(input('Minimum Bedrooms : '))
+            maxBedrooms = int(input("Maximum Bedrooms : "))
+            maxPrice = int(input("Maximuim Price : "))
+            location = str(input("Location? [Basingstoke = B / Winchester = W) ")).lower()
+            radius_reqr = [0 - 5 - 10 - 15 - 20 - 30 - 40]
+            radius = int(input("Radius (Options : [0 - 5 - 10 - 15 - 20 - 30 - 40]) : "))
+            
+            # Places
+            Basingstoke = "5E115"
+            Winchester = "5E1460"
+            if location == "b":
+                location = Basingstoke
+            elif location == "w":
+                location = Winchester
+                
+            url = f"https://www.rightmove.co.uk/property-for-sale/find.html?locationIdentifier=REGION%{location}&" \
+            f"&index=&" + str(index) + \
+            f"&maxBedrooms={maxBedrooms}&" \
             f"minBedrooms={minBedrooms}&" \
             f"maxPrice={maxPrice}&" \
             f"radius={radius}&" \
-            "propertyTypes=detached%2Csemi-detached%2Cterraced&primaryDisplayPropertyType=houses" \
-            "&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords="
+            f"propertyTypes=detached%2Csemi-detached%2Cterraced&primaryDisplayPropertyType=houses" \
+            "&includeSSTC=false&mustHave=&dontShow=&furnishTypes=&keywords="  '&propertyTypes=&mustHave=&dontShow=&furnishTypes=&keywords='
 
-      print("LinkLog : " + url)
-      time.sleep(1)
-      pagereq = requests.get(url)
-      print(pagereq)
 
-soup = BeautifulSoup(pagereq.content, "html.parser")
+            response = self.fetch(url)
+            self.parse(response.text)
 
-lists1 = soup.find_all("div", class_="propertyCard-wrapper")
+        self.to_csv()
 
-for list in lists1:
-      addresses = [address['content'] for address in list.findAll('meta', {'itemprop': 'streetAddress'})]
-      property_type_demo = str(list.find("h2", class_="propertyCard-title"))
-      property_type = property_type_demo.replace("end of terrace", "end-of-terrace")
-      property_type = property_type.split(" ")[-14: -10]
-      price = [price.text.strip() for price in list.findAll('div', {'class': 'propertyCard-priceValue'})]
-      dates = [date.text.split(' ')[-1] for date in
-               list.findAll('span', {'class': 'propertyCard-branchSummary-addedOrReduced'})]
-      image = [image['src'] for image in list.findAll('img', {'itemprop': 'image'})]
-      link = 1
-      info = str([property_type, addresses, price, dates])
-      print(info)
-      with open("log.txt", "a") as pf:
-            pf.write(info)
+
+if __name__ == '__main__':
+    scraper = RightmoveScraper()
+    scraper.run()
