@@ -1,0 +1,66 @@
+import pandas as pd
+import time
+import tkinter as tk
+import pywhatkit
+from PIL import Image, ImageTk
+from urllib.request import urlopen
+
+dataframe = pd.read_csv("rightmove.csv", encoding="cp1252")
+print(dataframe.columns)
+time.sleep(1)
+numlines = str(dataframe.shape)
+numlines = str(numlines.split())
+numlines = numlines[3:]
+numlines = int(numlines[:-9])
+print(numlines)
+pd.options.display.max_colwidth = 150
+
+for i in range(1):
+    num = 0
+    target = numlines
+    while num != target:
+        num += 1
+        with open("links.txt","a") as link_f:
+            link_f.write(str(dataframe["image"].iloc[num-1:num]))
+            time.sleep(1)
+            temp = str(dataframe["image"].iloc[num-1:num])
+            temp = (temp.split("\n"))
+            temp = str(temp[0])
+            temp = (temp.split(" "))
+            temp = str(temp[4])
+            print(temp)
+            pywhatkit.search(temp)
+
+            HEIGHT = 500
+            WIDTH = 600
+
+            root = tk.Tk()
+            root.title("RightMoveFinder")
+
+            canvas = tk.Canvas(root, height=HEIGHT, width=WIDTH)
+            canvas.pack()
+
+            frame = tk.Frame(root, bg='#80c1ff', bd=5)
+            frame.place(relx=0.5, rely=0.1, relwidth=0.75, relheight=0.1, anchor='n')
+
+            entry = tk.Entry(frame, font=40)
+            entry.place(relwidth=0.65, relheight=1)
+
+            button = tk.Button(frame, text="Next", font=40)
+            button.place(relx=0.7, relheight=1, relwidth=0.3)
+
+            lower_frame = tk.Frame(root, bg='#80c1ff', bd=10)
+            lower_frame.place(relx=0.5, rely=0.25, relwidth=1, relheight=0.7, anchor='n')
+
+            label = tk.Label(lower_frame)
+            label.place(relwidth=1, relheight=1)
+
+            imgurl = urlopen(temp)
+            raw_data = imgurl.read()
+            imgurl.close()
+
+            lower_frame_image = tk.PhotoImage(data=imgurl)
+            lower_frame_label = tk.Label(lower_frame, image=lower_frame_image)
+            lower_frame_label.place(relx=0, rely=0, relwidth=1, relheight=1)
+            root.mainloop()
+
