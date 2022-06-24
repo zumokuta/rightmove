@@ -1,0 +1,92 @@
+import pandas as pd
+import time
+import tkinter as tk
+import pywhatkit
+from PIL import Image, ImageTk
+from urllib.request import urlopen
+
+dataframe = pd.read_csv("rightmove.csv", encoding="cp1252")
+
+time.sleep(1)
+numlines = str(dataframe.shape)
+numlines = str(numlines.split())
+numlines = numlines[3:]
+numlines = int(numlines[:-9])
+print(numlines)
+pd.options.display.max_colwidth = 150
+
+for i in range(1):
+    num = 0
+    target = numlines
+    while num != target:
+        num += 1
+        global temp,linktemp
+        temp = str(dataframe["image"].iloc[num-1:num])
+        temp = (temp.split("\n"))
+        temp = str(temp[0])
+        temp = (temp.split(" "))
+        temp = str(temp[4])
+        linktemp = temp.split()
+
+        if num == target:
+            print(f"{target} Number of Lines Added")
+
+        linktemp = temp + "\n"
+        with open("links.txt","a") as link_f:
+            link_f.write(linktemp)
+            print(temp)
+        links_temp = linktemp
+        links_temp = (links_temp.replace("\n", " "))
+        print(links_temp)
+        datalink = pd.DataFrame({' ': [links_temp]})
+        datalink.to_csv("links.csv",mode="a", index=False)
+
+
+#to do
+#read the link csv file, then from column, alternate by 2 , then store the value as one x and x-1
+#give the button a command, if clicked: go to x
+#stop when reached limit..
+
+
+global imgurl,raw_data
+imgurl = urlopen(temp)
+raw_data = imgurl.read()
+imgurl.close()
+
+
+with open("links.txt","r") as link_r:
+    links_temp = str(link_r.readlines())
+
+
+HEIGHT = 500
+WIDTH = 600
+
+root = tk.Tk()
+root.title("RightMoveFinder")
+
+canvas = tk.Canvas(root, height=HEIGHT, width=WIDTH)
+canvas.pack()
+
+frame = tk.Frame(root, bg='#80c1ff', bd=5)
+frame.place(relx=0.5, rely=0.1, relwidth=0.75, relheight=0.1, anchor='n')
+
+entry = tk.Entry(frame, font=40)
+entry.place(relwidth=0.65, relheight=1)
+
+button = tk.Button(frame, text="Next", font=40)
+button.place(relx=0.7, relheight=1, relwidth=0.3)
+
+lower_frame = tk.Frame(root, bg='#80c1ff', bd=10)
+lower_frame.place(relx=0.5, rely=0.25, relwidth=1, relheight=0.7, anchor='n')
+
+label = tk.Label(lower_frame)
+label.place(relwidth=1, relheight=1)
+
+
+
+lower_frame_image = ImageTk.PhotoImage(data=raw_data)
+lower_frame_label = tk.Label(lower_frame, image=lower_frame_image)
+lower_frame_label.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+root.mainloop()
+
